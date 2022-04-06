@@ -8,7 +8,7 @@ namespace: anatomicjc
 name: passbolt
 
 # The version of the collection. Must be compatible with semantic versioning
-version: 0.0.1
+version: 0.0.2
 
 # The path to the Markdown (.md) readme file. This path is relative to the root of the collection
 readme: README.md
@@ -26,7 +26,7 @@ description: a lookup plugin to retrieve secrets from passbolt
 # Either a single license or a list of licenses for content inside of a collection. Ansible Galaxy currently only
 # accepts L(SPDX,https://spdx.org/licenses/) licenses. This key is mutually exclusive with 'license_file'
 license:
-- WTFPL
+- MIT-0
 
 # The path to the license file for the collection. This path is relative to the root of the collection. This key is
 # mutually exclusive with 'license'
@@ -46,10 +46,10 @@ dependencies: {}
 repository: https://gitlab.com/AnatomicJC/ansible-passbolt
 
 # The URL to any online docs
-documentation: http://docs.example.com
+documentation: https://help.passbolt.com
 
 # The URL to the homepage of the collection/project
-homepage: http://example.com
+homepage: https://www.passbolt.com
 
 # The URL to the collection issue tracker
 issues: http://example.com/issue/tracker
