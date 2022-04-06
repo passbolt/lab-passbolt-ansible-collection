@@ -79,6 +79,7 @@ from ansible.plugins.lookup import LookupBase
 from ansible.module_utils._text import to_text
 from ansible.utils.display import Display
 from passbolt import PassboltAPI
+from os import environ
 import json
 
 display = Display()
@@ -123,6 +124,38 @@ class LookupModule(LookupBase):
             "personal": resource.get("personal", ""),
         }
 
+    def _get_config(self, variables):
+        if variables.get("environment") is None:
+            return {
+                "base_url": environ.get("PASSBOLT_BASE_URL"),
+                "private_key": environ.get("PASSBOLT_PRIVATE_KEY"),
+                "passphrase": environ.get("PASSBOLT_PASSPHRASE"),
+                "gpg_binary": environ.get("PASSBOLT_GPG_BINARY", "gpg"),
+                "gpg_library": environ.get("PASSBOLT_GPG_LIBRARY", "PGPy"),
+                "fingerprint": environ.get("PASSBOLT_FINGERPRINT"),
+            }
+        else:
+            return {
+                "base_url": self._get_env_value(
+                    "PASSBOLT_BASE_URL", variables.get("environment")
+                ),
+                "private_key": self._get_env_value(
+                    "PASSBOLT_PRIVATE_KEY", variables.get("environment")
+                ),
+                "passphrase": self._get_env_value(
+                    "PASSBOLT_PASSPHRASE", variables.get("environment")
+                ),
+                "gpg_binary": self._get_env_value(
+                    "PASSBOLT_GPG_BINARY", variables.get("environment"), default="gpg"
+                ),
+                "gpg_library": self._get_env_value(
+                    "PASSBOLT_GPG_LIBRARY", variables.get("environment"), default="PGPy"
+                ),
+                "fingerprint": self._get_env_value(
+                    "PASSBOLT_FINGERPRINT", variables.get("environment")
+                ),
+            }
+
     def run(self, terms, variables=None, **kwargs):
 
         ret = []
@@ -143,26 +176,7 @@ class LookupModule(LookupBase):
         #    )
         #    f.write("\n")
 
-        dict_config = {
-            "base_url": self._get_env_value(
-                "PASSBOLT_BASE_URL", variables.get("environment")
-            ),
-            "private_key": self._get_env_value(
-                "PASSBOLT_PRIVATE_KEY", variables.get("environment")
-            ),
-            "passphrase": self._get_env_value(
-                "PASSBOLT_PASSPHRASE", variables.get("environment")
-            ),
-            "gpg_binary": self._get_env_value(
-                "PASSBOLT_GPG_BINARY", variables.get("environment"), default="gpg"
-            ),
-            "gpg_library": self._get_env_value(
-                "PASSBOLT_GPG_LIBRARY", variables.get("environment"), default="PGPy"
-            ),
-            "fingerprint": self._get_env_value(
-                "PASSBOLT_FINGERPRINT", variables.get("environment")
-            ),
-        }
+        dict_config = self._get_config(variables)
 
         p = PassboltAPI(dict_config=dict_config)
         if kwargs.get("per_uuid") != "true":
