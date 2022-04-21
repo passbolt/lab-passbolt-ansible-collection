@@ -178,53 +178,33 @@ class LookupModule(LookupBase):
         for term in terms:
             display.debug("Passbolt lookup term: %s" % term)
 
-            try:
-                if kwargs.get("per_uuid") == "true":
-                    resource = p.get_resource_per_uuid(term)
-                elif kwargs.get("wantlist"):  # with_passbolt case
-                    resource = next(
-                        item
-                        for item in passbolt_resources
-                        if item.get("name", "") == term
-                    )
-                elif len(kwargs):
-                    kwargs["name"] = term
-                    resource = next(
-                        (
-                            item
-                            for item in passbolt_resources
-                            if self._search(item, kwargs)
-                        ),
-                        str(),
-                    )
-                else:
-                    resource = next(
-                        (item for item in passbolt_resources if item["name"] == term),
-                        str(),
-                    )
+            if kwargs.get("per_uuid") == "true":
+                resource = p.get_resource_per_uuid(term)
+            elif kwargs.get("wantlist"):  # with_passbolt case
+                resource = next(
+                    item for item in passbolt_resources if item.get("name", "") == term
+                )
+            elif len(kwargs):
+                kwargs["name"] = term
+                resource = next(
+                    (item for item in passbolt_resources if self._search(item, kwargs)),
+                    dict(),
+                )
+            else:
+                resource = next(
+                    (item for item in passbolt_resources if item["name"] == term),
+                    dict(),
+                )
+            if resource.get("id"):
                 resource_secrets = (
                     dict_config.get("gpg_library", "PGPy") == "gnupg"
                     and json.loads(
-                        p.decrypt(p.get_resource_secret(resource["id"])).data
+                        p.decrypt(p.get_resource_secret(resource.get("id"))).data
                     )
-                    or json.loads(p.decrypt(p.get_resource_secret(resource["id"])))
+                    or json.loads(p.decrypt(p.get_resource_secret(resource.get("id"))))
                 )
-
                 ret.append(self._format_result(resource, resource_secrets))
-
-            except:
+            else:
                 ret.append(self._format_result(dict(), dict()))
 
         return ret
-
-
-# from passbolt import PassboltAPI
-# import json
-#
-# p = PassboltAPI('AC0E164DDAF64C04282FA0A8AD36A0D907DB21C9')
-# p.get_resources()
-# resource_id = next(item for item in p.get_resources() if item["name"] == "docker.com token for gitlab")['id']
-# res = json.loads(p.decrypt(p.get_resource_secret(resource_id)).data)
-#
-## print password
-# print (res['password'])
