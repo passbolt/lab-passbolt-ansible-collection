@@ -180,6 +180,8 @@ class LookupModule(LookupBase):
 
             if kwargs.get("per_uuid") == "true":
                 resource = p.get_resource_per_uuid(term)
+                if not len(resource):
+                    resource = dict()
             elif kwargs.get("wantlist"):  # with_passbolt case
                 resource = next(
                     item for item in passbolt_resources if item.get("name", "") == term
