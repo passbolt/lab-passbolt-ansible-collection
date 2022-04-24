@@ -81,6 +81,8 @@ from ansible.utils.display import Display
 from passbolt import PassboltAPI
 from os import environ
 import json
+import secrets
+import string
 
 display = Display()
 
@@ -110,6 +112,44 @@ class LookupModule(LookupBase):
                 res += 1
 
         return expected == res
+
+    def _create_new_password(self):
+        characters = string.ascii_letters + string.digits
+        if (
+            str(self.dict_config.get("new_resource_password_special_chars")).lower()
+            == "true"
+        ):
+            characters += string.punctuation
+        return "".join(secrets.choice(characters) for i in range(20))
+
+    def _create_new_resource(self, kwargs):
+        new_password = self._create_new_password()
+        new_description = "Ansible Generated"
+        new_resource = {
+            "name": kwargs.get("name"),
+            "username": kwargs.get("username"),
+            "uri": kwargs.get("uri"),
+            "resource_type_id": self.p.resource_types["password-and-description"],
+            "secrets": [
+                {
+                    "data": self.p.encrypt(
+                        {"description": new_description, "password": new_password},
+                        self.p.get_user_public_key(self.p.user_id),
+                    )
+                }
+            ],
+        }
+
+        r = self.p.create_resource(new_resource)
+        if r.status_code == 200:
+            resource = json.loads(r.text).get("body")
+            resource_secrets = {
+                "password": new_password,
+                "description": new_description,
+            }
+            return self._format_result(resource, resource_secrets)
+        else:
+            return self._format_result(dict(), dict())
 
     def _format_result(self, resource, resource_secrets):
         return {
@@ -147,7 +187,71 @@ class LookupModule(LookupBase):
             "fingerprint": self._get_env_value(
                 "PASSBOLT_FINGERPRINT", variables.get("environment")
             ),
+            "create_new_resource": self._get_env_value(
+                "PASSBOLT_CREATE_NEW_RESOURCE",
+                variables.get("environment"),
+                default=False,
+            ),
+            "new_resource_password_length": self._get_env_value(
+                "PASSBOLT_NEW_RESOURCE_PASSWORD_LENGTH",
+                variables.get("environment"),
+                default=20,
+            ),
+            "new_resource_password_special_chars": self._get_env_value(
+                "PASSBOLT_NEW_RESOURCE_PASSWORD_SPECIAL_CHARS",
+                variables.get("environment"),
+                default=False,
+            ),
         }
+
+    def zdebug(self, *args, **kwargs):
+        with open("/tmp/debug", "w") as f:
+            f.write("\n")
+        if args:
+            with open("/tmp/debug", "a") as f:
+                f.write(repr(args))
+                f.write("\n")
+        if kwargs:
+            with open("/tmp/debug", "a") as f:
+                f.write(repr(kwargs))
+                f.write("\n")
+        # f.write(
+        #    self._templar.template(
+        #        next(
+        #            item.get("PASSBOLT_PASSPHRASE")
+        #            for item in variables.get("environment")
+        #            if item.get("PASSBOLT_PASSPHRASE")
+        #        )
+        #    )
+        # )
+        # f.write("\n")
+
+    def passbolt_init(self, variables, kwargs):
+        self.dict_config = self._get_config(variables)
+        self.p = PassboltAPI(dict_config=self.dict_config)
+
+        if kwargs.get("per_uuid") != "true":
+            self.passbolt_resources = self.p.get_resources()
+
+    def get_resource_per_uuid(self, uuid):
+        resource = self.p.get_resource_per_uuid(uuid)
+        if not len(resource):
+            resource = dict()
+        return resource
+
+    def get_resource_per_term(self, term):
+        resource = next(
+            (item for item in self.passbolt_resources if item.get("name") == term),
+            dict(),
+        )
+        return resource
+
+    def get_resource_per_kwargs(self, kwargs):
+        resource = next(
+            (item for item in self.passbolt_resources if self._search(item, kwargs)),
+            dict(),
+        )
+        return resource
 
     def run(self, terms, variables=None, **kwargs):
 
@@ -155,58 +259,38 @@ class LookupModule(LookupBase):
 
         self.set_options(var_options=variables, direct=kwargs)
 
-        # with open("debug", "w") as f:
-        #    f.write(repr(kwargs))
-        #    f.write("\n")
-        #    f.write(
-        #        self._templar.template(
-        #            next(
-        #                item.get("PASSBOLT_PASSPHRASE")
-        #                for item in variables.get("environment")
-        #                if item.get("PASSBOLT_PASSPHRASE")
-        #            )
-        #        )
-        #    )
-        #    f.write("\n")
-
-        dict_config = self._get_config(variables)
-
-        p = PassboltAPI(dict_config=dict_config)
-        if kwargs.get("per_uuid") != "true":
-            passbolt_resources = p.get_resources()
+        self.passbolt_init(variables, kwargs)
 
         for term in terms:
             display.debug("Passbolt lookup term: %s" % term)
+            kwargs["name"] = uuid = term
 
             if kwargs.get("per_uuid") == "true":
-                resource = p.get_resource_per_uuid(term)
-                if not len(resource):
-                    resource = dict()
+                resource = self.get_resource_per_uuid(uuid)
             elif kwargs.get("wantlist"):  # with_passbolt case
-                resource = next(
-                    item for item in passbolt_resources if item.get("name", "") == term
-                )
-            elif len(kwargs):
-                kwargs["name"] = term
-                resource = next(
-                    (item for item in passbolt_resources if self._search(item, kwargs)),
-                    dict(),
-                )
+                resource = self.get_resource_per_term(term)
+            elif len(kwargs):  # search for term plus username, uri, etc.
+                resource = self.get_resource_per_kwargs(kwargs)
             else:
-                resource = next(
-                    (item for item in passbolt_resources if item["name"] == term),
-                    dict(),
-                )
+                resource = self.get_resource_per_term(term)
             if resource.get("id"):
+                # We got a resource, fetch their secrets
                 resource_secrets = (
-                    dict_config.get("gpg_library", "PGPy") == "gnupg"
+                    self.dict_config.get("gpg_library", "PGPy") == "gnupg"
                     and json.loads(
-                        p.decrypt(p.get_resource_secret(resource.get("id"))).data
+                        self.p.decrypt(
+                            self.p.get_resource_secret(resource.get("id"))
+                        ).data
                     )
-                    or json.loads(p.decrypt(p.get_resource_secret(resource.get("id"))))
+                    or json.loads(
+                        self.p.decrypt(self.p.get_resource_secret(resource.get("id")))
+                    )
                 )
                 ret.append(self._format_result(resource, resource_secrets))
             else:
-                ret.append(self._format_result(dict(), dict()))
+                if str(self.dict_config.get("create_new_resource")).lower() == "true":
+                    ret.append(self._create_new_resource(kwargs))
+                else:
+                    ret.append(self._format_result(dict(), dict()))
 
         return ret
