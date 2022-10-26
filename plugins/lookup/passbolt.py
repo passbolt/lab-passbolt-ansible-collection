@@ -291,6 +291,6 @@ class LookupModule(LookupBase):
                 if str(self.dict_config.get("create_new_resource")).lower() == "true":
                     ret.append(self._create_new_resource(kwargs))
                 else:
-                    ret.append(self._format_result(dict(), dict()))
+                    raise Exception("resource {} not found".format(terms[0]))
 
         return ret
