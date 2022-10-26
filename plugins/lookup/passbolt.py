@@ -256,6 +256,7 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
 
         ret = []
+        resourcenotfound = "false"
 
         self.set_options(var_options=variables, direct=kwargs)
 
@@ -287,10 +288,14 @@ class LookupModule(LookupBase):
                     )
                 )
                 ret.append(self._format_result(resource, resource_secrets))
+
             else:
                 if str(self.dict_config.get("create_new_resource")).lower() == "true":
                     ret.append(self._create_new_resource(kwargs))
                 else:
-                    ret.append(self._format_result(dict(), dict()))
+                    resourcenotfound = "true"
 
-        return ret
+        if resourcenotfound == "true":
+            raise Exception("resource " + terms[0] + " not found")
+        else:
+            return ret
