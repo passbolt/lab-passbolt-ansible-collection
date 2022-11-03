@@ -23,7 +23,7 @@ def all_secrets(d: dict, regexfil: str):
 
 class FilterModule(object):
     def filters(self) -> dict:
-        return {"passbolt_check_naming": self.passbolt_check_naming}
+        return {"check_naming": self.check_naming}
 
-    def passbolt_check_naming(self, s, regexfil) -> dict:
+    def check_naming(self, s, regexfil) -> dict:
         return all_secrets(s, regexfil)
