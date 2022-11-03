@@ -1,4 +1,13 @@
 from __future__ import absolute_import, division, print_function
+import string
+import secrets
+import json
+from os import environ
+from passbolt import PassboltAPI
+from ansible.utils.display import Display
+from ansible.module_utils._text import to_text
+from ansible.plugins.lookup import LookupBase
+from ansible.errors import AnsibleError, AnsibleParserError
 
 __metaclass__ = type
 
@@ -13,12 +22,9 @@ DOCUMENTATION = """
 EXAMPLES = """
 - hosts: localhost
   gather_facts: no
-  vars:
-    regexpass: 'prod|dev|-[a-z-]*'
   tasks:
-  - name: "Check if all passwords are match the naming guideline
-  debug:
-      msg: "{{ lookup('anatomicjc.passbolt.passbolt_inventory') | passbolt_check_naming(regexpass)  }}"
+  - debug:
+      msg: "{{ lookup('anatomicjc.passbolt.passbolt_inventory') }}"
 """
 
 RETURN = """
@@ -29,17 +35,9 @@ RETURN = """
     elements: str
 """
 
-from ansible.errors import AnsibleError, AnsibleParserError
-from ansible.plugins.lookup import LookupBase
-from ansible.module_utils._text import to_text
-from ansible.utils.display import Display
-from passbolt import PassboltAPI
-from os import environ
-import json
-import secrets
-import string
 
 display = Display()
+
 
 class LookupModule(LookupBase):
     def _get_env_value(self, selected_variable, environment_variables, default=str()):
@@ -99,7 +97,6 @@ class LookupModule(LookupBase):
         self.dict_config = self._get_config(variables)
         self.p = PassboltAPI(dict_config=self.dict_config)
         self.passbolt_resources = self.p.get_resources()
-
 
     def run(self, terms, variables=None, **kwargs):
         self.set_options(var_options=variables, direct=kwargs)
