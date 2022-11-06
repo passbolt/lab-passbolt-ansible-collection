@@ -16,9 +16,17 @@ MIT No Attribution - https://opensource.org/licenses/MIT-0
 
 This is the source repository for [https://galaxy.ansible.com/anatomicjc/passbolt](https://galaxy.ansible.com/anatomicjc/passbolt)
 
-## Passbolt lookup plugin
+## Passbolt lookup plugin / passbolt_inventory plugin
+
+### passbolt
 
 This lookup plugin allows you to retrieve ansible secrets from [passbolt](https://www.passbolt.com)
+
+It is based on [py-passbolt library](https://pypi.org/project/py-passbolt/).
+
+### passbolt_inventory
+
+This Plugin allows to you to retrieve all [passbolt](https://www.passbolt.com) resources the user has access to. You can use the filter anatomicjc.passbolt.check_naming to check if all resources are compliant with your internal naming guideline.
 
 It is based on [py-passbolt library](https://pypi.org/project/py-passbolt/).
 
@@ -62,3 +70,7 @@ gsed -z 's/\n/\\n/g' private.asc
 
 * Blog post about passbolt ansible lookup plugin: [https://blog.passbolt.com/managing-secrets-in-ansible-using-passbolt-87af031ceab6](https://blog.passbolt.com/managing-secrets-in-ansible-using-passbolt-87af031ceab6)
 * Gitlab repository with examples: [https://github.com/passbolt/lab-passbolt-ansible-poc](https://github.com/passbolt/lab-passbolt-ansible-poc)
+
+## check_naming filter plugin
+
+This plugin provides the capability to check if [passbolt](https://www.passbolt.com) resources are compliant with a naming guideline using the output a regex string and the output of the passbolt lookup or the passbolt_inventory lookup.
