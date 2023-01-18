@@ -130,6 +130,7 @@ class LookupModule(LookupBase):
             "username": kwargs.get("username"),
             "uri": kwargs.get("uri"),
             "resource_type_id": self.p.resource_types["password-and-description"],
+            "folder_parent_id": kwargs.get("folder_parent_id"),
             "secrets": [
                 {
                     "data": self.p.encrypt(
@@ -163,7 +164,7 @@ class LookupModule(LookupBase):
             "modified": resource.get("modified", ""),
             "modified_by": resource.get("modified_by", ""),
             "resource_type_id": resource.get("resource_type_id", ""),
-            "forder_parent_id": resource.get("folder_parent_id", ""),
+            "folder_parent_id": resource.get("folder_parent_id", ""),
             "personal": resource.get("personal", ""),
         }
 
