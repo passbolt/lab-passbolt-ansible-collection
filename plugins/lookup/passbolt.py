@@ -188,6 +188,9 @@ class LookupModule(LookupBase):
             "fingerprint": self._get_env_value(
                 "PASSBOLT_FINGERPRINT", variables.get("environment")
             ),
+            "verify": self._get_env_value(
+                "PASSBOLT_VERIFY", variables.get("verify"), default=True
+            ),
             "create_new_resource": self._get_env_value(
                 "PASSBOLT_CREATE_NEW_RESOURCE",
                 variables.get("environment"),
