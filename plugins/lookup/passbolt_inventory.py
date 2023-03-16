@@ -91,6 +91,10 @@ class LookupModule(LookupBase):
             "fingerprint": self._get_env_value(
                 "PASSBOLT_FINGERPRINT", variables.get("environment")
             ),
+            "verify": self._get_env_value(
+                "PASSBOLT_VERIFY", variables.get("verify"), default=True
+            ),
+
         }
 
     def passbolt_init(self, variables, kwargs):
