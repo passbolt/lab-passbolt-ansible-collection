@@ -124,7 +124,7 @@ class LookupModule(LookupBase):
 
     def _create_new_resource(self, kwargs):
         new_password = self._create_new_password()
-        new_description = "Ansible Generated"
+        new_description = kwargs.get("description","Ansible Generated")
         new_resource = {
             "name": kwargs.get("name"),
             "username": kwargs.get("username"),
