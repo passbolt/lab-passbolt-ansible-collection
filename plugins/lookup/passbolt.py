@@ -123,7 +123,7 @@ class LookupModule(LookupBase):
         return "".join(secrets.choice(characters) for i in range(20))
 
     def _create_new_resource(self, kwargs):
-        new_password = self._create_new_password()
+        new_password = kwargs.get("password",self._create_new_password())
         new_description = kwargs.get("description","Ansible Generated")
         new_resource = {
             "name": kwargs.get("name"),
@@ -264,7 +264,9 @@ class LookupModule(LookupBase):
         self.set_options(var_options=variables, direct=kwargs)
 
         self.passbolt_init(variables, kwargs)
-
+        #removing description and password for the search
+        description = kwargs.pop("description",None)
+        password = kwargs.pop("password",None)
         for term in terms:
             display.debug("Passbolt lookup term: %s" % term)
             kwargs["name"] = uuid = term
@@ -293,6 +295,11 @@ class LookupModule(LookupBase):
                 ret.append(self._format_result(resource, resource_secrets))
             else:
                 if str(self.dict_config.get("create_new_resource")).lower() == "true":
+                    #if r
+                    if description:
+                        kwargs["description"] = description
+                    if password:
+                        kwargs["password"] = password
                     ret.append(self._create_new_resource(kwargs))
                 else:
                     raise Exception("resource {} not found".format(terms[0]))
