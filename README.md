@@ -45,6 +45,8 @@ It is based on [py-passbolt library](https://pypi.org/project/py-passbolt/).
 | PASSBOLT_NEW_RESOURCE_PASSWORD_LENGTH        | Password length when creating a new resource                                                                         | Default value: 20                       |
 | PASSBOLT_NEW_RESOURCE_PASSWORD_SPECIAL_CHARS | The plugin creates only alphanumerics characters by default. Set this variable to true to include special characters | true / false (default)                  |
 
+The environment variables are overridable by variable or the --extra-vars option 
+
 **Note**: How to set OpenPGP key in one-line format:
 
 Linux:
