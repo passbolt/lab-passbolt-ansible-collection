@@ -120,7 +120,7 @@ class LookupModule(LookupBase):
             == "true"
         ):
             characters += string.punctuation
-        return "".join(secrets.choice(characters) for i in range(20))
+        return "".join(secrets.choice(characters) for i in range(self.dict_config.get("new_resource_password_length")))
 
     def _create_new_resource(self, kwargs):
         new_password = self._create_new_password()
