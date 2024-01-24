@@ -171,7 +171,12 @@ class LookupModule(LookupBase):
             "uri": resource.get("uri", ""),
             "username": resource.get("username", ""),
             "password": resource_secrets.get("password", ""),
-            "description": resource_secrets.get("description", ""),
+            # description can be encrypted in resource_secrets or unencrypted in resource
+            "description": (
+                "description" in resource_secrets 
+                and resource_secrets.get("description", "")
+                or resource.get("description", "")
+                ),
             "deleted": resource.get("deleted", ""),
             "created": resource.get("created", ""),
             "modified": resource.get("modified", ""),
@@ -293,17 +298,16 @@ class LookupModule(LookupBase):
                 resource = self.get_resource_per_term(term)
             if resource.get("id"):
                 # We got a resource, fetch their secrets
-                resource_secrets = (
-                    self.dict_config.get("gpg_library", "PGPy") == "gnupg"
-                    and json.loads(
-                        self.p.decrypt(
-                            self.p.get_resource_secret(resource.get("id"))
-                        ).data
+                resource_secret_decrypted = self.p.decrypt(self.p.get_resource_secret(resource.get("id")))
+                try:
+                    resource_secrets = (
+                        self.dict_config.get("gpg_library", "PGPy") == "gnupg"
+                        and json.loads(resource_secret_decrypted.data)
+                        or json.loads(resource_secret_decrypted)
                     )
-                    or json.loads(
-                        self.p.decrypt(self.p.get_resource_secret(resource.get("id")))
-                    )
-                )
+                except json.decoder.JSONDecodeError:
+                    # Only password is returned when description field is not encrypted
+                    resource_secrets = { "password": resource_secret_decrypted }
                 ret.append(self._format_result(resource, resource_secrets))
             else:
                 if str(self.dict_config.get("create_new_resource")).lower() == "true":
