@@ -69,11 +69,69 @@ Use gsed instead of sed:
 gsed -z 's/\n/\\n/g' private.asc
 ```
 
-### Resources
+## Use this plugin with AWX
 
-* Blog post about passbolt ansible lookup plugin: [https://blog.passbolt.com/managing-secrets-in-ansible-using-passbolt-87af031ceab6](https://blog.passbolt.com/managing-secrets-in-ansible-using-passbolt-87af031ceab6)
-* Gitlab repository with examples: [https://github.com/passbolt/lab-passbolt-ansible-poc](https://github.com/passbolt/lab-passbolt-ansible-poc)
+Build a custom AWX Execution Environment using [Ansible Builder](https://ansible.readthedocs.io/projects/builder/en/latest/)
+
+Add to requirements.txt:
+
+```
+py-passbolt
+```
+
+Add to requirements.txt:
+
+```
+collections:
+    - name: anatomicjc.passbolt
+```
+
+Add a new Custom Credential Type to AWX:
+
+* Name: Passbolt Credentials
+* Description: Passbolt credentials for accessing Passbolt
+* Configuration input:
+
+```
+fields:
+  - id: passbolt_url
+    type: string
+    label: Passbolt Base URL
+  - id: passbolt_private_key
+    type: string
+    label: Passbolt Private GPG Key
+    secret: true
+    multiline: true
+  - id: passbolt_passphrase
+    type: string
+    label: Passbolt Private GPG Key Passphrase
+    secret: true
+required:
+  - passbolt_url
+  - passbolt_private_key
+  - passbolt_passphrase
+```
+
+* Configuration injector:
+
+```
+env:
+  PASSBOLT_BASE_URL: '{{ passbolt_url }}'
+  PASSBOLT_PASSPHRASE: '{{ passbolt_passphrase }}'
+  PASSBOLT_PRIVATE_KEY: '{{ passbolt_private_key }}'
+```
+
+* Add a new credential of the type Passbolt Credentials to AWX:
+  * Set the url and passphrase
+  * Upload or paste the contents of the Private key file into the Passbolt Private GPG Key field without any modifications
+* Create or update an AWX template to use the custom EE and add the above defined Passbolt Credentails. The playbook executed by this template will now have access to passbolt using the lookup plugin.
 
 ## check_naming filter plugin
 
 This plugin provides the capability to check if [passbolt](https://www.passbolt.com) resources are compliant with a naming guideline using the output a regex string and the output of the passbolt lookup or the passbolt_inventory lookup.
+
+## Resources
+
+* Blog post about passbolt ansible lookup plugin: [https://blog.passbolt.com/managing-secrets-in-ansible-using-passbolt-87af031ceab6](https://blog.passbolt.com/managing-secrets-in-ansible-using-passbolt-87af031ceab6)
+* Gitlab repository with examples: [https://github.com/passbolt/lab-passbolt-ansible-poc](https://github.com/passbolt/lab-passbolt-ansible-poc)
+* How to use this lookup plugin with AWX: [read this post from passbolt community forum](https://community.passbolt.com/t/ansible-lookup-plugin-throws-typeerror-encoding-without-a-string-argument/9222/7)
