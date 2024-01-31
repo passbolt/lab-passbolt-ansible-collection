@@ -307,7 +307,11 @@ class LookupModule(LookupBase):
                     )
                 except json.decoder.JSONDecodeError:
                     # Only password is returned when description field is not encrypted
-                    resource_secrets = { "password": resource_secret_decrypted }
+                    resource_secrets = (
+                        self.dict_config.get("gpg_library", "PGPy") == "gnupg"
+                        and { "password": resource_secret_decrypted.data }
+                        or { "password": resource_secret_decrypted }
+                    )
                 ret.append(self._format_result(resource, resource_secrets))
             else:
                 if str(self.dict_config.get("create_new_resource")).lower() == "true":
