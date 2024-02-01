@@ -79,7 +79,7 @@ Add to requirements.txt:
 py-passbolt
 ```
 
-Add to requirements.txt:
+Add to requirements.yml:
 
 ```
 collections:
