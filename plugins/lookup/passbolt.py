@@ -102,19 +102,20 @@ class LookupModule(LookupBase):
             return variable
 
     def _get_env_value(self, selected_variable, environment_variables, default=str()):
-        if not environment_variables:
-            return environ.get(selected_variable, default)
-        else:
-            return self._templar.template(
-                next(
-                    (
-                        item.get(selected_variable)
-                        for item in environment_variables
-                        if item.get(selected_variable)
-                    ),
-                    default,
-                )
+        variable = environ.get(selected_variable, None)
+        if variable is not None:
+            default = variable
+        variable = self._templar.template(
+            next(
+                (
+                    item.get(selected_variable)
+                    for item in environment_variables
+                    if item.get(selected_variable)
+                ),
+                default,
             )
+        )
+        return variable
 
     def _search(self, item, kwargs):
         res = 0
