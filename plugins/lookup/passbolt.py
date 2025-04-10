@@ -83,6 +83,7 @@ from os import environ
 import json
 import secrets
 import string
+import pyotp
 
 display = Display()
 
@@ -105,7 +106,7 @@ class LookupModule(LookupBase):
         os_environ_variable = environ.get(selected_variable, None)
         if os_environ_variable is not None:
             default = os_environ_variable
-        
+
         return self._templar.template(
             next(
                 (
@@ -167,6 +168,13 @@ class LookupModule(LookupBase):
             return self._format_result(dict(), dict())
 
     def _format_result(self, resource, resource_secrets):
+        totp_code = ""
+        if resource_secrets.get('totp'):
+            totp = pyotp.TOTP(
+                resource_secrets['totp']['secret_key'],
+                digits=resource_secrets['totp']['digits']
+            )
+            totp_code = totp.now()
         return {
             "name": resource.get("name", ""),
             "uri": resource.get("uri", ""),
@@ -174,7 +182,7 @@ class LookupModule(LookupBase):
             "password": resource_secrets.get("password", ""),
             # description can be encrypted in resource_secrets or unencrypted in resource
             "description": (
-                "description" in resource_secrets 
+                "description" in resource_secrets
                 and resource_secrets.get("description", "")
                 or resource.get("description", "")
                 ),
@@ -185,6 +193,7 @@ class LookupModule(LookupBase):
             "resource_type_id": resource.get("resource_type_id", ""),
             "folder_parent_id": resource.get("folder_parent_id", ""),
             "personal": resource.get("personal", ""),
+            "totp": totp_code,
         }
 
     def _get_config(self, variables):
