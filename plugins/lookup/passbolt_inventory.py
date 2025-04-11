@@ -40,20 +40,34 @@ display = Display()
 
 
 class LookupModule(LookupBase):
-    def _get_env_value(self, selected_variable, environment_variables, default=str()):
-        if not environment_variables:
-            return environ.get(selected_variable, default)
-        else:
-            return self._templar.template(
-                next(
-                    (
-                        item.get(selected_variable)
-                        for item in environment_variables
-                        if item.get(selected_variable)
-                    ),
-                    default,
-                )
+    def _get_value(
+        self, selected_variable, variables, environment_variables, default=str()
+    ):
+        variable = variables.get(selected_variable, None)
+        if variable is None:
+            return self._get_env_value(
+                selected_variable=selected_variable,
+                environment_variables=environment_variables,
+                default=default,
             )
+        else:
+            return variable
+
+    def _get_env_value(self, selected_variable, environment_variables, default=str()):
+        os_environ_variable = environ.get(selected_variable, None)
+        if os_environ_variable is not None:
+            default = os_environ_variable
+        
+        return self._templar.template(
+            next(
+                (
+                    item.get(selected_variable)
+                    for item in environment_variables
+                    if item.get(selected_variable)
+                ),
+                default,
+            )
+        )
 
     def _format_result(self, resource, resource_secrets):
         return {
@@ -73,28 +87,42 @@ class LookupModule(LookupBase):
 
     def _get_config(self, variables):
         return {
-            "base_url": self._get_env_value(
-                "PASSBOLT_BASE_URL", variables.get("environment")
+            "base_url": self._get_value(
+                "PASSBOLT_BASE_URL", variables, variables.get("environment")
             ),
-            "private_key": self._get_env_value(
-                "PASSBOLT_PRIVATE_KEY", variables.get("environment")
+            "private_key": self._get_value(
+                "PASSBOLT_PRIVATE_KEY", variables, variables.get("environment")
             ),
-            "passphrase": self._get_env_value(
-                "PASSBOLT_PASSPHRASE", variables.get("environment")
+            "passphrase": self._get_value(
+                "PASSBOLT_PASSPHRASE", variables, variables.get("environment")
             ),
-            "gpg_binary": self._get_env_value(
-                "PASSBOLT_GPG_BINARY", variables.get("environment"), default="gpg"
+            "gpg_binary": self._get_value(
+                "PASSBOLT_GPG_BINARY", variables, variables.get("environment"), default="gpg"
             ),
-            "gpg_library": self._get_env_value(
-                "PASSBOLT_GPG_LIBRARY", variables.get("environment"), default="PGPy"
+            "gpg_library": self._get_value(
+                "PASSBOLT_GPG_LIBRARY", variables, variables.get("environment"), default="PGPy"
             ),
-            "fingerprint": self._get_env_value(
-                "PASSBOLT_FINGERPRINT", variables.get("environment")
+            "fingerprint": self._get_value(
+                "PASSBOLT_FINGERPRINT", variables, variables.get("environment")
             ),
-            "verify": self._get_env_value(
-                "PASSBOLT_VERIFY", variables.get("verify"), default=True
+            "verify": self._get_value(
+                "PASSBOLT_VERIFY", variables, variables.get("environment"), default=True
             ),
-
+            "create_new_resource": self._get_value(
+                "PASSBOLT_CREATE_NEW_RESOURCE", variables,
+                variables.get("environment"),
+                default=False,
+            ),
+            "new_resource_password_length": self._get_value(
+                "PASSBOLT_NEW_RESOURCE_PASSWORD_LENGTH", variables,
+                variables.get("environment"),
+                default=20,
+            ),
+            "new_resource_password_special_chars": self._get_value(
+                "PASSBOLT_NEW_RESOURCE_PASSWORD_SPECIAL_CHARS", variables,
+                variables.get("environment"),
+                default=False,
+            ),
         }
 
     def passbolt_init(self, variables, kwargs):
